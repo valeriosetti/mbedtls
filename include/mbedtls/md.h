@@ -49,7 +49,7 @@
  */
 
 /* PSA accelerated implementations */
-#if defined(MBEDTLS_PSA_CRYPTO_C)
+#if defined(MBEDTLS_PSA_CRYPTO_C) || defined(MBEDTLS_PSA_CRYPTO_CLIENT)
 #if defined(MBEDTLS_PSA_ACCEL_ALG_MD5)
 #define MBEDTLS_MD_CAN_MD5
 #define MBEDTLS_MD_MD5_VIA_PSA
