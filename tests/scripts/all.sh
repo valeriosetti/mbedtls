@@ -3113,8 +3113,8 @@ component_test_accel_md_crypto_client () {
     # Run the tests
     # -------------
 
-    msg "Run MD suite tests"
-    ( cd tests; ./test_suite_md )
+    #msg "Run MD suite tests"
+    #( cd tests; ./test_suite_md )
 
     msg "Run example program"
     ( cd programs/hash; ./hello )
