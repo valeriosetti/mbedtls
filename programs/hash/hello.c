@@ -18,35 +18,36 @@
  */
 
 #include "mbedtls/build_info.h"
-
 #include "mbedtls/platform.h"
+#include "mbedtls/md.h"
+#include "psa/crypto.h"
 
-#if defined(MBEDTLS_MD5_C)
-#include "mbedtls/md5.h"
-#endif
-
-#if !defined(MBEDTLS_MD5_C)
+#if !(defined(MBEDTLS_MD_SOME_PSA) || defined(MBEDTLS_MD_SOME_LEGACY))
 int main(void)
 {
-    mbedtls_printf("MBEDTLS_MD5_C not defined.\n");
-    mbedtls_exit(0);
+    mbedtls_printf("MD not supported.\n");
+    mbedtls_exit(MBEDTLS_EXIT_FAILURE);
 }
+
 #else
 
-
 int main(void)
 {
-    int i, ret;
-    unsigned char digest[16];
+    int i;
+    unsigned char digest[MBEDTLS_MD_MAX_SIZE];
     char str[] = "Hello, world!";
+    mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
 
-    mbedtls_printf("\n  MD5('%s') = ", str);
+    psa_crypto_init();
 
-    if ((ret = mbedtls_md5((unsigned char *) str, 13, digest)) != 0) {
+    mbedtls_printf("\n  MD('%s') = ", str);
+
+    if (mbedtls_md(mbedtls_md_info_from_type(md_type),
+                   (unsigned char *) str, sizeof(str), digest) != 0) {
         mbedtls_exit(MBEDTLS_EXIT_FAILURE);
     }
 
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < mbedtls_md_get_size_from_type(md_type); i++) {
         mbedtls_printf("%02x", digest[i]);
     }
 
