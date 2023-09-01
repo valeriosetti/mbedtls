@@ -53,11 +53,12 @@
 #include "mbedtls/sha512.h"
 #include "mbedtls/sha3.h"
 
-#if defined(MBEDTLS_PSA_CRYPTO_C)
+#if defined(MBEDTLS_PSA_CRYPTO_C) || defined(MBEDTLS_PSA_CRYPTO_CLIENT)
 #include <psa/crypto.h>
 #include "md_psa.h"
 #include "psa_util_internal.h"
 #endif
+
 
 #if defined(MBEDTLS_MD_SOME_PSA)
 #include "psa_crypto_core.h"
@@ -757,7 +758,7 @@ mbedtls_md_type_t mbedtls_md_get_type(const mbedtls_md_info_t *md_info)
     return md_info->type;
 }
 
-#if defined(MBEDTLS_PSA_CRYPTO_C)
+#if defined(MBEDTLS_PSA_CRYPTO_C) || defined(MBEDTLS_PSA_CRYPTO_CLIENT)
 int mbedtls_md_error_from_psa(psa_status_t status)
 {
     return PSA_TO_MBEDTLS_ERR_LIST(status, psa_to_md_errors,
