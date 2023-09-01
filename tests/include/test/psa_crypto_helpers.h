@@ -23,7 +23,7 @@
 
 #include "test/helpers.h"
 
-#if defined(MBEDTLS_PSA_CRYPTO_C)
+#if defined(MBEDTLS_PSA_CRYPTO_C) || defined(MBEDTLS_PSA_CRYPTO_CLIENT)
 #include "test/psa_helpers.h"
 #include <psa/crypto.h>
 #endif
@@ -54,6 +54,9 @@
         mbedtls_psa_crypto_free();                                      \
     }                                                                   \
     while (0)
+#elif defined(MBEDTLS_PSA_CRYPTO_CLIENT)
+#define PSA_INIT() PSA_ASSERT(psa_crypto_init())
+#define PSA_DONE() ((void) 0)
 #else /*MBEDTLS_PSA_CRYPTO_C */
 #define PSA_INIT() ((void) 0)
 #define PSA_DONE() ((void) 0)
