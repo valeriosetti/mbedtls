@@ -226,6 +226,7 @@ ifndef WINDOWS
 	rm -f include/alt-extra/*/*_alt.h
 	rm -rf libtestdriver1
 	rm -f ../library/libtestdriver1.a
+	rm -f ../library/libtestdriver2.a
 else
 	if exist *.c del /Q /F *.c
 	if exist *.exe del /Q /F *.exe
@@ -267,6 +268,13 @@ define libtestdriver1_rewrite :=
 	s/\b(?=mbedtls_|psa_)/libtestdriver1_/g;
 endef
 
+define libtestdriver2_rewrite :=
+	s!^(\s*#\s*include\s*[\"<])(mbedtls)/!$${1}libtestdriver1/include/$${2}/!; \
+	next if /^\s*#\s*include/; \
+	s/\b(?=MBEDTLS_)/LIBTESTDRIVER1_/g; \
+	s/\b(?=mbedtls_)/libtestdriver1_/g;
+endef
+
 libtestdriver1.a:
 	# Copy the library and fake a 3rdparty Makefile include.
 	rm -Rf ./libtestdriver1
@@ -298,6 +306,38 @@ libtestdriver1.a:
 
 	$(MAKE) -C ./libtestdriver1/library CFLAGS="-I../../ $(CFLAGS)" LDFLAGS="$(LDFLAGS)" libmbedcrypto.a
 	cp ./libtestdriver1/library/libmbedcrypto.a ../library/libtestdriver1.a
+
+libtestdriver2.a:
+	# Copy the library and fake a 3rdparty Makefile include.
+	rm -Rf ./libtestdriver1
+	mkdir ./libtestdriver1
+	cp -Rf ../library ./libtestdriver1
+	cp -Rf ../include ./libtestdriver1
+	cp -Rf ../scripts ./libtestdriver1
+	mkdir ./libtestdriver1/3rdparty
+	touch ./libtestdriver1/3rdparty/Makefile.inc
+
+	# Set the test driver base (minimal) configuration.
+	cp ./include/test/drivers/config_test_driver.h ./libtestdriver1/include/mbedtls/mbedtls_config.h
+
+	# Set the PSA cryptography configuration for the test library.
+	# It is set from the copied include/psa/crypto_config.h of the Mbed TLS
+        # library the test library is intended to be linked with extended by
+        # ./include/test/drivers/crypto_config_test_driver_extension.h to
+        # mirror the PSA_ACCEL_* macros.
+	mv ./libtestdriver1/include/psa/crypto_config.h ./libtestdriver1/include/psa/crypto_config.h.bak
+	head -n -1 ./libtestdriver1/include/psa/crypto_config.h.bak > ./libtestdriver1/include/psa/crypto_config.h
+	cat ./include/test/drivers/crypto_config_test_driver_extension.h >> ./libtestdriver1/include/psa/crypto_config.h
+	echo "#endif /* PSA_CRYPTO_CONFIG_H */" >> ./libtestdriver1/include/psa/crypto_config.h
+
+	# Prefix MBEDTLS_* PSA_* symbols with LIBTESTDRIVER1_ as well as
+	# mbedtls_* psa_* symbols with libtestdriver1_ to avoid symbol clash
+	# when this test driver library is linked with the Mbed TLS library.
+	perl -pi -e '$(libtestdriver2_rewrite)' ./libtestdriver1/library/*.[ch]
+	perl -pi -e '$(libtestdriver2_rewrite)' ./libtestdriver1/include/*/*.h
+
+	$(MAKE) -C ./libtestdriver1/library CFLAGS="-I../../ $(CFLAGS)" LDFLAGS="$(LDFLAGS)" libmbedcrypto.a
+	cp ./libtestdriver1/library/libmbedcrypto.a ../library/libtestdriver2.a
 
 ifdef RECORD_PSA_STATUS_COVERAGE_LOG
 include/test/instrument_record_status.h: ../include/psa/crypto.h Makefile

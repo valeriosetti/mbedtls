@@ -894,6 +894,11 @@ helper_libtestdriver1_make_drivers() {
     make -C tests libtestdriver1.a CFLAGS=" $ASAN_CFLAGS $loc_accel_flags" LDFLAGS="$ASAN_CFLAGS"
 }
 
+helper_libtestdriver2_make_drivers() {
+    loc_accel_flags=$( echo "$1 ${2-}" | sed 's/[^ ]* */-DLIBTESTDRIVER1_MBEDTLS_PSA_ACCEL_&/g' )
+    make -C tests libtestdriver2.a CFLAGS=" $ASAN_CFLAGS $loc_accel_flags" LDFLAGS="$ASAN_CFLAGS"
+}
+
 # Build the main libraries, programs and tests,
 # linking to the drivers library (with ASan).
 #
@@ -910,6 +915,16 @@ helper_libtestdriver1_make_main() {
     loc_accel_flags=$( echo "$loc_accel_list" | sed 's/[^ ]* */-DLIBTESTDRIVER1_MBEDTLS_PSA_ACCEL_&/g' )
     loc_accel_flags="$loc_accel_flags $( echo "$loc_accel_list" | sed 's/[^ ]* */-DMBEDTLS_PSA_ACCEL_&/g' )"
     make CFLAGS="$ASAN_CFLAGS -I../tests/include -I../tests -I../../tests -DPSA_CRYPTO_DRIVER_TEST -DMBEDTLS_TEST_LIBTESTDRIVER1 $loc_accel_flags" LDFLAGS="-ltestdriver1 $ASAN_CFLAGS" "$@"
+}
+
+helper_libtestdriver2_make_main_no_driver_test() {
+    loc_accel_list=$1
+    shift
+
+    # we need flags both with and without the LIBTESTDRIVER1_ prefix
+    loc_accel_flags=$( echo "$loc_accel_list" | sed 's/[^ ]* */-DLIBTESTDRIVER1_MBEDTLS_PSA_ACCEL_&/g' )
+    loc_accel_flags="$loc_accel_flags $( echo "$loc_accel_list" | sed 's/[^ ]* */-DMBEDTLS_PSA_ACCEL_&/g' )"
+    make CFLAGS="$ASAN_CFLAGS -I../tests/include -I../tests -I../../tests -DMBEDTLS_TEST_LIBTESTDRIVER1 $loc_accel_flags" LDFLAGS="-ltestdriver2 $ASAN_CFLAGS" "$@"
 }
 
 ################################################################
@@ -3064,6 +3079,45 @@ component_test_psa_crypto_config_accel_hash () {
 
     msg "test: MBEDTLS_PSA_CRYPTO_CONFIG with accelerated hash"
     make test
+}
+
+component_test_accel_md_crypto_client () {
+    msg "test: accelerate hash and ciphers and run tests"
+
+    cp configs/crypto_config_test.h "$CRYPTO_CONFIG_H"
+    cp configs/mbedtls_config_test.h "$CONFIG_H"
+
+    loc_accel_list="ALG_MD5 ALG_RIPEMD160 ALG_SHA_1 ALG_SHA_224 ALG_SHA_256 ALG_SHA_384 ALG_SHA_512"
+
+    # Build
+    # -----
+    msg "Build crypto driver"
+    helper_libtestdriver2_make_drivers "$loc_accel_list"
+
+    # Disable CRYPTO_C and enable CRYPTO_CLIENT
+    scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
+    scripts/config.py set MBEDTLS_PSA_CRYPTO_CLIENT
+
+    msg "Build MbedTLS library, tests and applications"
+    helper_libtestdriver2_make_main_no_driver_test "$loc_accel_list" lib tests programs
+
+    # Ensure there is no PSA code on the library side
+    not grep psa_import_key library/psa_crypto.o
+    # Ensure that all accelerated components have the software counterpart disabled
+    not grep mbedtls_md5 library/md5.o
+    not grep mbedtls_sha1 library/sha1.o
+    not grep mbedtls_sha256 library/sha256.o
+    not grep mbedtls_sha512 library/sha512.o
+    not grep mbedtls_ripemd160 library/ripemd160.o
+
+    # Run the tests
+    # -------------
+
+    msg "Run MD suite tests"
+    ( cd tests; ./test_suite_md )
+
+    msg "Run example program"
+    ( cd programs/hash; ./hello )
 }
 
 component_test_psa_crypto_config_accel_hash_keep_builtins () {
