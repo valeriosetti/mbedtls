@@ -435,7 +435,10 @@ int mbedtls_md_setup(mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info
 
 #if defined(MBEDTLS_MD_SOME_PSA)
     if (md_can_use_psa(ctx->md_info)) {
-        ctx->md_ctx = mbedtls_calloc(1, sizeof(psa_hash_operation_t));
+        /* Bad fix: I really don't understand the reason for the +8 in the
+         * malloc size, but without it then md_starts() fails when psa tries
+         * to do memset... */
+        ctx->md_ctx = mbedtls_calloc(1, sizeof(psa_hash_operation_t) + 8);
         if (ctx->md_ctx == NULL) {
             return MBEDTLS_ERR_MD_ALLOC_FAILED;
         }
