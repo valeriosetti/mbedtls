@@ -921,10 +921,8 @@ helper_libtestdriver2_make_main_no_driver_test() {
     loc_accel_list=$1
     shift
 
-    # we need flags both with and without the LIBTESTDRIVER1_ prefix
-    loc_accel_flags=$( echo "$loc_accel_list" | sed 's/[^ ]* */-DLIBTESTDRIVER1_MBEDTLS_PSA_ACCEL_&/g' )
-    loc_accel_flags="$loc_accel_flags $( echo "$loc_accel_list" | sed 's/[^ ]* */-DMBEDTLS_PSA_ACCEL_&/g' )"
-    make CFLAGS="$ASAN_CFLAGS -I../tests/include -I../tests -I../../tests -DMBEDTLS_TEST_LIBTESTDRIVER1 $loc_accel_flags" LDFLAGS="-ltestdriver2 $ASAN_CFLAGS" "$@"
+    loc_accel_flags="$( echo "$loc_accel_list" | sed 's/[^ ]* */-DMBEDTLS_PSA_ACCEL_&/g' )"
+    make CFLAGS="$ASAN_CFLAGS $loc_accel_flags" LDFLAGS="-ltestdriver2 $ASAN_CFLAGS" "$@"
 }
 
 ################################################################
