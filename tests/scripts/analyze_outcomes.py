@@ -285,7 +285,12 @@ KNOWN_TASKS = {
                     # "legacy only" tests require hash algorithms to be NOT
                     # accelerated, but this of course false for the accelerated
                     # test component.
-                    re.compile('PSA dispatch .* legacy only'),
+                    re.compile(r'PSA dispatch .* legacy only'),
+                    # In the accelerated component the "driver" support is available,
+                    # but the legacy is intentionally disabled. Therefore the
+                    # following tests would be done by "component_ref", but not
+                    # from the "component_driver".
+                    re.compile(r'PSA dispatch .* legacy\+driver'),
                 ],
                 'test_suite_platform': [
                     # Incompatible with sanitizers (e.g. ASan). If the driver
