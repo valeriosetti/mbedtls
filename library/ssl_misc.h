@@ -2468,7 +2468,7 @@ static inline int mbedtls_ssl_tls12_sig_alg_is_supported(
     }
 
     switch (sig) {
-#if defined(MBEDTLS_RSA_C)
+#if defined(PSA_HAVE_ALG_RSA_SIGN_OR_VERIFY)
         case MBEDTLS_SSL_SIG_RSA:
             break;
 #endif
