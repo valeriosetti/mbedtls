@@ -143,7 +143,7 @@
 #endif
 
 #if defined(MBEDTLS_SSL_PROTO_TLS1_2) && \
-    !(defined(PSA_WANT_ALG_SHA_1) || defined(PSA_WANT_ALG_SHA_256) || defined(PSA_WANT_ALG_SHA_512))
+    !(defined(PSA_WANT_ALG_SHA_256) || defined(PSA_WANT_ALG_SHA_384))
 #error "MBEDTLS_SSL_PROTO_TLS1_2 defined, but not all prerequisites"
 #endif
 
